@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+<head>
+  <title>leaflet example</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!--[if lte IE 8]>
+    <link rel="stylesheet" href="node_modules/leaflet/dist/leaflet.ie.css" />
+  <![endif]-->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.css">
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+  <!-- Latest compiled and minified CSS -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+
+	<!-- Optional theme -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css">
+
+	<!-- Latest compiled and minified JavaScript -->
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+</head>
+<body>
+  <div id="map" style="width: 600px; height: 400px"></div>
+  <div class="row">
+  	<div class="col-md-2">
+	  <form>
+	  		<div class="form-group">
+			    <label for="travel-time">Travel time (in minutes)</label>
+			    <input class="form-control" id="travel-time">
+		    </div>
+		    <div class="form-group">
+			    <label for="resolution">Resolution</label>
+			    <input class="form-control" id="resolution">
+		    </div>
+	  </form>
+	</div>
+  </div>
+  <script type="text/javascript">
+  	serialize = function(obj) {
+	  var str = [];
+	  for(var p in obj)
+	    if (obj.hasOwnProperty(p)) {
+	      str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
+	    }
+	  return str.join("&");
+	};
+  	var map = L.map('map').setView([33.752110, -84.385770], 13);
+  	var defaultTravelTime = 15;
+  	var defaultResolution = 25;
+  	$('#travel-time').attr('placeholder', defaultTravelTime)
+  	$('#resolution').attr('placeholder', defaultResolution)
+	L.tileLayer('https://{s}.tiles.mapbox.com/v3/{id}/{z}/{x}/{y}.png', {
+		maxZoom: 18,
+		attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
+			'<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+			'Imagery © <a href="http://mapbox.com">Mapbox</a>',
+		id: 'examples.map-i875mjb7'
+	}).addTo(map);
+
+
+
+	var popup = L.popup();
+	var markers = [];
+	var isochrones = [];
+	function callback(data){
+		console.log(data);
+	}
+
+	function onMapClick(e) {
+		if (markers.length > 0){
+			for (var i = markers.length - 1; i >= 0; i--) {
+				map.removeLayer(markers[i]);
+			}
+		}
+		if (isochrones.length > 0){
+			for (var i = isochrones.length - 1; i >= 0; i--) {
+				map.removeLayer(isochrones[i]);
+			}
+		}
+		var marker = L.marker(e.latlng).addTo(map);
+		console.log(e.latlng);
+		markers.push(marker);
+		var time = $('#travel-time').val() || defaultTravelTime;
+		var resolution = $('#resolution').val() || defaultResolution;
+		var params = {
+			point : [e.latlng.lng, e.latlng.lat].join(','),
+			time : time,
+			resolution : resolution
+		};
+		d3.json('https://route.st.nlp.nokia.com/routing/6.2/calculateisoline.json?mode=fastest;pedestrian;traffic:disabled&start=33.767484,-84.415090&time=PT0H15M&app_id=q42UE6vR4QjdyVxOugG9&app_code=UBCs-SNSuThUgnM-6Dy6OA', //+ serialize(params), 
+			function(error, json) {
+		  if (error) return console.warn(error);
+		  data = json;
+		  console.log(data);
+		  // var iso = L.geoJson(data).addTo(map);
+		  // isochrones.push(iso);
+		  // map.fitBounds(iso.getBounds());
+		});
+	}
+
+	map.on('click', onMapClick);
+  </script>
+</body>
+</html>
