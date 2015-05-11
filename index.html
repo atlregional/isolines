@@ -50,13 +50,13 @@
 		    	<label for="traffic">Traffic</label>
 		    	<div id="traffic" class="radio">
 				  <label>
-				    <input type="radio" name="optionsRadios" id="optionsRadios1" value="enabled" checked>
+				    <input type="radio" name="traffic-radio" id="optionsRadios1" value="enabled" checked>
 				    enabled
 				  </label>
 				</div>
 				<div class="radio">
 				  <label>
-				    <input type="radio" name="optionsRadios" id="optionsRadios2" value="disabled">
+				    <input type="radio" name="traffic-radio" id="optionsRadios2" value="disabled">
 				    disabled
 				  </label>
 				</div>
@@ -75,132 +75,25 @@
             </div>
 			
 		    <a type="button" class="btn btn-primary" id="route">Go</a>
-		    <button disabled="disabled" type="button" onclick="downloadGeojson()" class="btn btn-default" id="export">Export</button>
+		    <button disabled="disabled" type="button" class="btn btn-default" id="export">Export</button>
+		    <div class="form-group">
+		    	<label for="export-type">type</label>
+		    	<div id="export-type" class="radio">
+				  <label>
+				    <input type="radio" name="export-type-radio" id="optionsRadios1" value="geojson" checked>
+				    geojson
+				  </label>
+				</div>
+				<div class="radio">
+				  <label>
+				    <input type="radio" name="export-type-radio" id="optionsRadios2" value="shp">
+				    shp
+				  </label>
+				</div>
+		    </div>
 	  </form>
 	</div>
   </div>
-  <script type="text/javascript">
-  // $('.datepicker').datepicker()
-  $('#date-time').datetimepicker(
-  	// {showTodayButton: true}
-  );
-  $('#date-time-input').attr('placeholder', moment().format('MM/D/YYYY h:mm A'))
-  	serialize = function(obj) {
-	  var str = [];
-	  for(var p in obj)
-	    if (obj.hasOwnProperty(p)) {
-	      str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
-	    }
-	  return str.join("&");
-	};
-  	var map = L.map('map').setView([33.752110, -84.385770], 13);
-  	var defaultTravelTime = 15;
-  	var defaultMode = 'car';
-  	$('#travel-time').attr('placeholder', defaultTravelTime)
-  	// $('#mode').attr('placeholder', defaultMode)
-	L.tileLayer('https://{s}.tiles.mapbox.com/v3/{id}/{z}/{x}/{y}.png', {
-		maxZoom: 18,
-		attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
-			'<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
-			'Imagery © <a href="http://mapbox.com">Mapbox</a>',
-		id: 'examples.map-i875mjb7'
-	}).addTo(map);
-
-
-
-	var popup = L.popup();
-	var markers = [];
-	var isochrones = [];
-	var lastParams;
-	var latlngs;
-	function downloadGeojson(){
-		var data = isochrones[0].toGeoJSON();
-		data.properties = lastParams;
-		download('isochrone.geojson', JSON.stringify(data));
-	}
-	function download(filename, text) {
-	  var pom = document.createElement('a');
-	  pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
-	  pom.setAttribute('download', filename);
-
-	  pom.style.display = 'none';
-	  document.body.appendChild(pom);
-
-	  pom.click();
-
-	  document.body.removeChild(pom);
-	}
-	function onMapClick(e) {
-		var latlng;
-		console.log(e)
-		if (typeof e.latlng == 'undefined'){
-			latlng = e._latlng
-		}
-		else{
-			latlng = e.latlng
-		}
-		if (markers.length > 0){
-			for (var i = markers.length - 1; i >= 0; i--) {
-				map.removeLayer(markers[i]);
-			}
-		}
-		if (isochrones.length > 0){
-			for (var i = isochrones.length - 1; i >= 0; i--) {
-				map.removeLayer(isochrones[i]);
-			}
-		}
-		var marker = L.marker(latlng).addTo(map);
-		console.log(e.latlng);
-		markers.push(marker);
-		var time = $('#travel-time').val() || defaultTravelTime;
-		var mode = $('#mode').val() || defaultMode;
-		var traffic = $('form input[type=radio]:checked').val();
-		var dateTime = $('#date-time').data("DateTimePicker").date() !== null ? $('#date-time').data("DateTimePicker").date().format() : 'now';
-		var params = {
-			point : [latlng.lat, latlng.lng].join(','),
-			time : time,
-			mode : mode,
-			traffic : traffic,
-			departure : dateTime
-		};
-		lastParams = params;
-		d3.json('http://192.168.1.66:8080/?' + serialize(params), 
-			function(error, json) {
-		  if (error) return console.warn(error);
-		  data = json;
-		  // console.log(data.Response.isolines[0].value);
-		  latlngs = data.Response.isolines[0].value;
-		  var latlngArray = []
-		  for (var i = latlngs.length - 1; i >= 0; i--) {
-		  	latlngArray.push([+latlngs[i].split(',')[0], +latlngs[i].split(',')[1]])
-		  	// console.log(+latlngs[i].split(',')[0]);
-		  };
-		  // console.log(latlngArray);
-		  var iso = L.polygon(latlngArray, {fill:false}).addTo(map);
-		  isochrones.push(iso);
-		  map.fitBounds(iso.getBounds());
-		});
-
-		$('#export').prop('disabled', false);
-		// d3.json('https://route.st.nlp.nokia.com/routing/6.2/calculateisoline.json?mode=fastest;car;traffic:enabled&start=33.767484,-84.415090&time=PT0H15M&app_id=q42UE6vR4QjdyVxOugG9&app_code=UBCs-SNSuThUgnM-6Dy6OA&jsonCallback=callback', function(error, json){
-		// 	if (error) return console.warn(error);
-		//   data = json;
-		//   console.log(data.Response.isolines[0].value);
-		//   latlngs = data.Response.isolines[0].value;
-		//   var latlngArray = []
-		//   for (var i = latlngs.length - 1; i >= 0; i--) {
-		//   	latlngArray.push([+latlngs[i].split(',')[0], +latlngs[i].split(',')[1]])
-		//   	console.log(+latlngs[i].split(',')[0]);
-		//   };
-		//   console.log(latlngArray);
-		//   var iso = L.polyline(latlngArray).addTo(map);
-		//   isochrones.push(iso);
-		//   map.fitBounds(iso.getBounds());
-		// });
-	}
-
-	map.on('click', onMapClick);
-	$('#route').on('click', function(){onMapClick(markers[0])});
-  </script>
+  <script type="text/javascript" src="build.js"></script>
 </body>
 </html>
