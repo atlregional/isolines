@@ -41,6 +41,8 @@
 			    	<option>truck</option>
 			    </select>
 		    </div>
+		   	<button type="button" class="btn btn-info" id="route">Go</button>
+
 	  </form>
 	</div>
   </div>
@@ -96,7 +98,7 @@
 			time : time,
 			mode : mode
 		};
-		d3.json('http://localhost:8888/?' + serialize(params), 
+		d3.json('http://192.168.1.66:8080/?' + serialize(params), 
 			function(error, json) {
 		  if (error) return console.warn(error);
 		  data = json;
