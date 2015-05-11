@@ -10,24 +10,29 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.css">
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.3/leaflet.js"></script>
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+  
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
   <!-- Latest compiled and minified CSS -->
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
 
-	<!-- Optional theme -->
-	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css">
-
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.2/moment.min.js"></script>
 	<!-- Latest compiled and minified JavaScript -->
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+	
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.0/css/bootstrap-datepicker.min.css">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.4.0/js/bootstrap-datepicker.min.js"></script>
+
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.7.14/css/bootstrap-datetimepicker.min.css">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.7.14/js/bootstrap-datetimepicker.min.js"></script>
 </head>
 <body>
   <div id="map" style="width: 600px; height: 400px"></div>
   <div class="row">
-  	<div class="col-md-2">
-	  <form>
+  	<div class="col-md-6">
+	  <form class="form-inline">
 	  		<div class="form-group">
 			    <label for="travel-time">Travel time (in minutes)</label>
-			    <input class="form-control" id="travel-time">
+			    <input class="form-control" id="travel-time" style="width:50px;">
 		    </div>
 		    <!-- <div class="form-group">
 			    <label for="resolution">Resolution</label>
@@ -41,12 +46,43 @@
 			    	<option>truck</option>
 			    </select>
 		    </div>
-		   	<button type="button" class="btn btn-info" id="route">Go</button>
-
+		    <div class="form-group">
+		    	<label for="traffic">Traffic</label>
+		    	<div id="traffic" class="radio">
+				  <label>
+				    <input type="radio" name="optionsRadios" id="optionsRadios1" value="enabled" checked>
+				    enabled
+				  </label>
+				</div>
+				<div class="radio">
+				  <label>
+				    <input type="radio" name="optionsRadios" id="optionsRadios2" value="disabled">
+				    disabled
+				  </label>
+				</div>
+		    </div>
+			<!-- <div class="form-group">
+		    	<label for="date">Date</label>
+			    <input style="width:105px;" class="form-control" id="date" data-provide="datepicker">
+		    </div> -->
+		    <div class="form-group">
+                <div class='input-group date' id='date-time'>
+                    <input type='text' class="form-control" />
+                    <span class="input-group-addon">
+                        <span class="glyphicon glyphicon-calendar"></span>
+                    </span>
+                </div>
+            </div>
+			
+		    <a type="button" class="btn btn-primary" id="route">Go</a>
 	  </form>
 	</div>
   </div>
   <script type="text/javascript">
+  // $('.datepicker').datepicker()
+  $('#date-time').datetimepicker(
+  	// {showTodayButton: true}
+  );
   	serialize = function(obj) {
 	  var str = [];
 	  for(var p in obj)
@@ -73,11 +109,17 @@
 	var popup = L.popup();
 	var markers = [];
 	var isochrones = [];
-	function callback(error, data){
-		console.log(data);
-	}
+
 	var latlngs;
 	function onMapClick(e) {
+		var latlng;
+		console.log(e)
+		if (typeof e.latlng == 'undefined'){
+			latlng = e._latlng
+		}
+		else{
+			latlng = e.latlng
+		}
 		if (markers.length > 0){
 			for (var i = markers.length - 1; i >= 0; i--) {
 				map.removeLayer(markers[i]);
@@ -88,28 +130,32 @@
 				map.removeLayer(isochrones[i]);
 			}
 		}
-		var marker = L.marker(e.latlng).addTo(map);
+		var marker = L.marker(latlng).addTo(map);
 		console.log(e.latlng);
 		markers.push(marker);
 		var time = $('#travel-time').val() || defaultTravelTime;
 		var mode = $('#mode').val() || defaultMode;
+		var traffic = $('form input[type=radio]:checked').val();
+		var dateTime = $('#date-time').data("DateTimePicker").date() !== null ? $('#date-time').data("DateTimePicker").date().format() : 'now';
 		var params = {
-			point : [e.latlng.lat, e.latlng.lng].join(','),
+			point : [latlng.lat, latlng.lng].join(','),
 			time : time,
-			mode : mode
+			mode : mode,
+			traffic : traffic,
+			departure : dateTime
 		};
 		d3.json('http://192.168.1.66:8080/?' + serialize(params), 
 			function(error, json) {
 		  if (error) return console.warn(error);
 		  data = json;
-		  console.log(data.Response.isolines[0].value);
+		  // console.log(data.Response.isolines[0].value);
 		  latlngs = data.Response.isolines[0].value;
 		  var latlngArray = []
 		  for (var i = latlngs.length - 1; i >= 0; i--) {
 		  	latlngArray.push([+latlngs[i].split(',')[0], +latlngs[i].split(',')[1]])
-		  	console.log(+latlngs[i].split(',')[0]);
+		  	// console.log(+latlngs[i].split(',')[0]);
 		  };
-		  console.log(latlngArray);
+		  // console.log(latlngArray);
 		  var iso = L.polyline(latlngArray).addTo(map);
 		  isochrones.push(iso);
 		  map.fitBounds(iso.getBounds());
@@ -132,6 +178,7 @@
 	}
 
 	map.on('click', onMapClick);
+	$('#route').on('click', function(){onMapClick(markers[0])});
   </script>
 </body>
 </html>
