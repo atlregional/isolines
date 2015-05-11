@@ -29,9 +29,17 @@
 			    <label for="travel-time">Travel time (in minutes)</label>
 			    <input class="form-control" id="travel-time">
 		    </div>
-		    <div class="form-group">
+		    <!-- <div class="form-group">
 			    <label for="resolution">Resolution</label>
 			    <input class="form-control" id="resolution">
+		    </div> -->
+		    <div class="form-group">
+		    	<label for="mode">Mode</label>
+			    <select class="form-control" id="mode">
+			    	<option selected>car</option>
+			    	<option>pedestrian</option>
+			    	<option>truck</option>
+			    </select>
 		    </div>
 	  </form>
 	</div>
@@ -47,9 +55,9 @@
 	};
   	var map = L.map('map').setView([33.752110, -84.385770], 13);
   	var defaultTravelTime = 15;
-  	var defaultResolution = 25;
+  	var defaultMode = 'car';
   	$('#travel-time').attr('placeholder', defaultTravelTime)
-  	$('#resolution').attr('placeholder', defaultResolution)
+  	// $('#mode').attr('placeholder', defaultMode)
 	L.tileLayer('https://{s}.tiles.mapbox.com/v3/{id}/{z}/{x}/{y}.png', {
 		maxZoom: 18,
 		attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
@@ -63,10 +71,10 @@
 	var popup = L.popup();
 	var markers = [];
 	var isochrones = [];
-	function callback(data){
+	function callback(error, data){
 		console.log(data);
 	}
-
+	var latlngs;
 	function onMapClick(e) {
 		if (markers.length > 0){
 			for (var i = markers.length - 1; i >= 0; i--) {
@@ -82,21 +90,43 @@
 		console.log(e.latlng);
 		markers.push(marker);
 		var time = $('#travel-time').val() || defaultTravelTime;
-		var resolution = $('#resolution').val() || defaultResolution;
+		var mode = $('#mode').val() || defaultMode;
 		var params = {
-			point : [e.latlng.lng, e.latlng.lat].join(','),
+			point : [e.latlng.lat, e.latlng.lng].join(','),
 			time : time,
-			resolution : resolution
+			mode : mode
 		};
-		d3.json('https://route.st.nlp.nokia.com/routing/6.2/calculateisoline.json?mode=fastest;pedestrian;traffic:disabled&start=33.767484,-84.415090&time=PT0H15M&app_id=q42UE6vR4QjdyVxOugG9&app_code=UBCs-SNSuThUgnM-6Dy6OA', //+ serialize(params), 
+		d3.json('http://localhost:8888/?' + serialize(params), 
 			function(error, json) {
 		  if (error) return console.warn(error);
 		  data = json;
-		  console.log(data);
-		  // var iso = L.geoJson(data).addTo(map);
-		  // isochrones.push(iso);
-		  // map.fitBounds(iso.getBounds());
+		  console.log(data.Response.isolines[0].value);
+		  latlngs = data.Response.isolines[0].value;
+		  var latlngArray = []
+		  for (var i = latlngs.length - 1; i >= 0; i--) {
+		  	latlngArray.push([+latlngs[i].split(',')[0], +latlngs[i].split(',')[1]])
+		  	console.log(+latlngs[i].split(',')[0]);
+		  };
+		  console.log(latlngArray);
+		  var iso = L.polyline(latlngArray).addTo(map);
+		  isochrones.push(iso);
+		  map.fitBounds(iso.getBounds());
 		});
+		// d3.json('https://route.st.nlp.nokia.com/routing/6.2/calculateisoline.json?mode=fastest;car;traffic:enabled&start=33.767484,-84.415090&time=PT0H15M&app_id=q42UE6vR4QjdyVxOugG9&app_code=UBCs-SNSuThUgnM-6Dy6OA&jsonCallback=callback', function(error, json){
+		// 	if (error) return console.warn(error);
+		//   data = json;
+		//   console.log(data.Response.isolines[0].value);
+		//   latlngs = data.Response.isolines[0].value;
+		//   var latlngArray = []
+		//   for (var i = latlngs.length - 1; i >= 0; i--) {
+		//   	latlngArray.push([+latlngs[i].split(',')[0], +latlngs[i].split(',')[1]])
+		//   	console.log(+latlngs[i].split(',')[0]);
+		//   };
+		//   console.log(latlngArray);
+		//   var iso = L.polyline(latlngArray).addTo(map);
+		//   isochrones.push(iso);
+		//   map.fitBounds(iso.getBounds());
+		// });
 	}
 
 	map.on('click', onMapClick);
