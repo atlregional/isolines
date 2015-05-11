@@ -9599,7 +9599,7 @@ function onMapClick(e) {
 	markers.push(marker);
 	var time = $('#travel-time').val() || defaultTravelTime;
 	var mode = $('#mode').val() || defaultMode;
-	var traffic = $('input:radio[name=traffic-radio]:checked').val();
+	var traffic = $('#traffic').is(':checked') ? 'enabled' : 'disabled';
 	var dateTime = $('#date-time').data("DateTimePicker").date() !== null ? $('#date-time').data("DateTimePicker").date().format() : now.format();
 	var params = {
 		point : [latlng.lat, latlng.lng].join(','),
@@ -9608,15 +9608,25 @@ function onMapClick(e) {
 		traffic : traffic,
 		departure : dateTime
 	};
+	var params2 = {
+		start : 'geo!' + [latlng.lat, latlng.lng].join(','),
+		range : time*60,
+		rangetype : 'time',
+		mode : 'fastest;'+mode+';traffic:'+traffic,
+		departure : dateTime,
+		app_id : 'DemoAppId01082013GAL',
+		app_code : 'AJKnXv84fjrb0KIHawS0Tg'
+
+	};
 	lastParams = params;
-	var url = 'http://192.168.1.66:8080/?' + serialize(params);
+	var url = ! $('#version').is(':checked') ? 'http://192.168.1.66:8080/?' + serialize(params) : 'http://isoline.route.cit.api.here.com/routing/7.2/calculateisoline.json?' + serialize(params2);
 	console.log(url);
 	d3.json(url, 
 		function(error, json) {
 	  if (error) return console.warn(error);
 	  data = json;
-	  // console.log(data.Response.isolines[0].value);
-	  latlngs = data.Response.isolines[0].value;
+	  console.log(data);
+	  latlngs = typeof data.Response !== 'undefined' ? data.Response.isolines[0].value : data.response.isoline[0].component[0].shape;
 	  var latlngArray = []
 	  for (var i = latlngs.length - 1; i >= 0; i--) {
 	  	latlngArray.push([+latlngs[i].split(',')[0], +latlngs[i].split(',')[1]])
