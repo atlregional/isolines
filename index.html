@@ -75,6 +75,7 @@
             </div>
 			
 		    <a type="button" class="btn btn-primary" id="route">Go</a>
+		    <button disabled="disabled" type="button" onclick="downloadGeojson()" class="btn btn-default" id="export">Export</button>
 	  </form>
 	</div>
   </div>
@@ -109,8 +110,25 @@
 	var popup = L.popup();
 	var markers = [];
 	var isochrones = [];
-
+	var lastParams;
 	var latlngs;
+	function downloadGeojson(){
+		var data = isochrones[0].toGeoJSON();
+		data.properties = lastParams;
+		download('isochrone.geojson', JSON.stringify(data));
+	}
+	function download(filename, text) {
+	  var pom = document.createElement('a');
+	  pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+	  pom.setAttribute('download', filename);
+
+	  pom.style.display = 'none';
+	  document.body.appendChild(pom);
+
+	  pom.click();
+
+	  document.body.removeChild(pom);
+	}
 	function onMapClick(e) {
 		var latlng;
 		console.log(e)
@@ -144,6 +162,7 @@
 			traffic : traffic,
 			departure : dateTime
 		};
+		lastParams = params;
 		d3.json('http://192.168.1.66:8080/?' + serialize(params), 
 			function(error, json) {
 		  if (error) return console.warn(error);
@@ -160,6 +179,8 @@
 		  isochrones.push(iso);
 		  map.fitBounds(iso.getBounds());
 		});
+
+		$('#export').prop('disabled', false);
 		// d3.json('https://route.st.nlp.nokia.com/routing/6.2/calculateisoline.json?mode=fastest;car;traffic:enabled&start=33.767484,-84.415090&time=PT0H15M&app_id=q42UE6vR4QjdyVxOugG9&app_code=UBCs-SNSuThUgnM-6Dy6OA&jsonCallback=callback', function(error, json){
 		// 	if (error) return console.warn(error);
 		//   data = json;
