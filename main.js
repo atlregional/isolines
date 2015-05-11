@@ -4,7 +4,8 @@ var shpwrite = require('shp-write');
 $('#date-time').datetimepicker(
 	// {showTodayButton: true}
 );
-$('#date-time-input').attr('placeholder', moment().format('MM/D/YYYY h:mm A'))
+var now = moment();
+$('#date-time-input').attr('placeholder', now.format('MM/D/YYYY h:mm A'))
 	serialize = function(obj) {
   var str = [];
   for(var p in obj)
@@ -95,7 +96,7 @@ function onMapClick(e) {
 	var time = $('#travel-time').val() || defaultTravelTime;
 	var mode = $('#mode').val() || defaultMode;
 	var traffic = $('input:radio[name=traffic-radio]:checked').val();
-	var dateTime = $('#date-time').data("DateTimePicker").date() !== null ? $('#date-time').data("DateTimePicker").date().format() : 'now';
+	var dateTime = $('#date-time').data("DateTimePicker").date() !== null ? $('#date-time').data("DateTimePicker").date().format() : now.format();
 	var params = {
 		point : [latlng.lat, latlng.lng].join(','),
 		time : time,
